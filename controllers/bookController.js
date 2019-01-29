@@ -49,6 +49,7 @@ function createBook(req, res) {
   });
 }
 
+
 function getAllBooks(req, res) {
   Book.find()
     .exec((err, books) => {
@@ -76,6 +77,25 @@ function getBook(req, res) {
       if (!book)
         return res.status(404).send({ message: `El Book no existe` });
       res.status(200).send({ book });
+    });
+}
+
+function searchAllFields(req, res){
+  let newSearch = req.params.search;
+
+  Book.find({$or: [{ title: newSearch }, { author: newSearch }, { category: newSearch },
+    { synopsis: newSearch }, { tags: newSearch }, { publisher: newSearch }, { index: newSearch } ]})
+    .exec((err, books) => {
+      if (err)
+        return res
+          .status(500)
+          .send({ message: `Error al realizar la petición: ${err}` });
+      if (!books)
+        return res
+          .status(404)
+          .send({ message: "No existen Books con ese tag" });
+
+      res.status(200).send({ books });
     });
 }
 
@@ -177,5 +197,6 @@ module.exports = {
   getAllBooks,
   getBookByTag,
   getBookByTitle,
-  getBookByCategory
+  getBookByCategory,
+  searchAllFields
 };
