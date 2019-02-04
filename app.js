@@ -14,6 +14,12 @@ app.use(cors())
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true, parameterLimit: 5000000}));
 
+app.use(function(req, res, next) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Headers', ['Content-Type', '*'])
+  next();
+});
+
 app.use('/user', userRoutes);
 app.use('/book', bookRoutes);
 
