@@ -4,6 +4,7 @@ const User = require("../models/user");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt-nodejs");
 const enume = require("../middlewares/enumStructures");
+const service = require('../services');
 
 function logUser(req, res) {
   const logUser = new User(req.body);
@@ -27,7 +28,8 @@ function logUser(req, res) {
             .send({ message: "Usuario o contraseña incorrectos" });
 
         return res.status(200).send({
-          message: "Te has logueado correctamente"
+          message: "Te has logueado correctamente",
+          token: service.createToken(user)
         });
       });
     });
@@ -43,7 +45,8 @@ function createUser (req, res) {
   user.save((err, userStored) => {
     if(err) res.status(500).send({message: `Error al salvar la base de datos ${err}`})
     return res.status(200).send( { 
-      message: 'Usuario creado correctamente'
+      message: 'Usuario creado correctamente',
+      token: service.createToken(user)
     })
   })
 }
