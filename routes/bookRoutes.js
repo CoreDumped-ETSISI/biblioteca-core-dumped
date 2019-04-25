@@ -7,6 +7,7 @@ const auth = require('../middlewares/auth')
 const bookController = require('../controllers/bookController')
 
 router.post('/createBook', bookController.createBook);
+router.post('/uploadBook', bookController.loadBook);
 router.get('/getBooks/:bookId', bookController.getAllBooks);
 router.get('/getAllBooks', bookController.getAllBooks);
 router.get('/searchAllBooks/:search', bookController.searchAllFields);

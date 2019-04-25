@@ -5,6 +5,18 @@ const Book = require("../models/book");
 const mongoose = require("mongoose");
 const enumerated = require("../middlewares/enumStructures");
 
+var multer = require('multer')
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '../temp_files')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now())
+  }
+})
+var upload = multer({ storage: storage }).single('book');
+
+
 function createBook(req, res) {
   let book = new Book();
 
@@ -189,6 +201,15 @@ function deleteBook(req, res) {
   });
 }
 
+function loadBook(req, res) {
+  upload(req, res, function(err) {
+    if (err) {
+      return res.status(418).send({})
+    }
+    return res.sendStatus(200)
+  })
+}
+
 module.exports = {
   createBook,
   getBook,
@@ -198,5 +219,6 @@ module.exports = {
   getBookByTag,
   getBookByTitle,
   getBookByCategory,
-  searchAllFields
+  searchAllFields,
+  loadBook
 };
