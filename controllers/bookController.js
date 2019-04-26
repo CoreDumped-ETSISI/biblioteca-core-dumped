@@ -4,18 +4,45 @@ const User = require("../models/user");
 const Book = require("../models/book");
 const mongoose = require("mongoose");
 const enumerated = require("../middlewares/enumStructures");
+const epubParser = require('epub-metadata-parser');
+const PDFExtract  = require('pdf.js-extract').PDFExtract;
+const fsExtra = require('fs-extra')
 
 var multer = require('multer')
+
+// Will later save in database with more complex name such as file.fieldname + '-' + Date.now()+' '+file.originalname
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, './temp_files')
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now()+' '+file.originalname)
+    const ext = file.originalname.split('.')[1];
+    cb(null, file.fieldname +'.'+ ext)
   }
 })
 var upload = multer({ storage: storage }).single('book');
 
+
+function parseEpub(req, res) {
+  epubParser.parse('./temp_files/book.epub', '../Documents' , book => {
+      if(book==undefined)
+        res.status(404).send({ message:'You don´t have any epub files currently' });
+      else
+        res.status(200).send({ message: book });
+  });
+}
+
+function parsePDF(req, res) {
+  const pdfExtract = new PDFExtract();
+  const options = {}; /* see below */
+
+  pdfExtract.extract('./temp_files/book.pdf', options, (err, data) => {
+      if (err){
+        res.status(404).send({ message: err });
+      }
+      res.status(200).send({ message: data });
+  });
+}
 
 function createBook(req, res) {
   let book = new Book();
@@ -202,6 +229,7 @@ function deleteBook(req, res) {
 }
 
 function loadBook(req, res) {
+  fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
     if (err) {
       console.log(err)
@@ -222,5 +250,7 @@ module.exports = {
   getBookByTitle,
   getBookByCategory,
   searchAllFields,
-  loadBook
+  loadBook,
+  parseEpub,
+  parsePDF
 };
