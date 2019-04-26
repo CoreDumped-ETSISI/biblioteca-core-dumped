@@ -8,10 +8,10 @@ const enumerated = require("../middlewares/enumStructures");
 var multer = require('multer')
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, '../temp_files')
+    cb(null, './temp_files')
   },
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now())
+    cb(null, file.fieldname + '-' + Date.now()+' '+file.originalname)
   }
 })
 var upload = multer({ storage: storage }).single('book');
@@ -204,8 +204,10 @@ function deleteBook(req, res) {
 function loadBook(req, res) {
   upload(req, res, function(err) {
     if (err) {
+      console.log(err)
       return res.status(418).send({})
     }
+    console.log(req)
     return res.sendStatus(200)
   })
 }

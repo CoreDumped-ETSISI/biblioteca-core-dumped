@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 
 const config = require('./config')
 
-const port = '3000'
+const port = '3003'
 let server
 app.set('port', port)
 
