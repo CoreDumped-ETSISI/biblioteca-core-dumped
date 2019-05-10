@@ -232,10 +232,8 @@ function loadBook(req, res) {
   fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
     if (err) {
-      console.log(err)
       return res.status(418).send({})
     }
-    console.log(req)
     return res.sendStatus(200)
   })
 }
