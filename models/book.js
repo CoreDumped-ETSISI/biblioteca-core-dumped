@@ -6,6 +6,8 @@ const enumerator = require("../middlewares/enumStructures");
 
 const BookSchema = new Schema({
   title: { type: String, required: true },
+  sha1: { type: String, required: true, unique: true },
+  filename: { type: String, required: true, unique: true },
   author: { type: String },
   category: { type: String, required: true },
   synopsis: { type: String },
@@ -17,13 +19,8 @@ const BookSchema = new Schema({
   index: { type: String },
   status: {type: String, enum: enumerator.bookStatus, required: true},
   uploader: { type: Schema.Types.ObjectId, ref: enumerator.modelsName.user },
-  uploads: [
-    {
-      _id: false,
-      format: { type: String, enum: enumerator.formats },
-      size: { type: Number }
-    }
-  ]
+  format: { type: String, enum: enumerator.formats },
+  size: { type: Number }
 });
 
 module.exports = mongoose.model(
