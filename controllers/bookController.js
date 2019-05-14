@@ -6,7 +6,8 @@ const mongoose = require("mongoose");
 const enumerated = require("../middlewares/enumStructures");
 const epubParser = require('epub-metadata-parser');
 const PDFExtract  = require('pdf.js-extract').PDFExtract;
-const fsExtra = require('fs-extra')
+const fsExtra = require('fs-extra');
+const crypto = require('crypto');
 
 var multer = require('multer')
 
@@ -17,10 +18,11 @@ var storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = file.originalname.split('.')[1];
+
     cb(null, file.fieldname +'.'+ ext)
   }
 })
-var upload = multer({ storage: storage }).single('book');
+var upload = multer({ storage: storage, preservePath: true }).single('book');
 
 
 function parseEpub(req, res) {
@@ -234,6 +236,18 @@ function loadBook(req, res) {
     if (err) {
       return res.status(418).send({})
     }
+    var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
+    var hash = crypto.createHash('sha1');
+    hash.setEncoding('hex');
+    
+    fd.on('end', function() {
+        hash.end();
+        console.log(hash.read()); // the desired sha1sum
+    });
+    
+    // read all file and pipe it (write it) to the hash object
+    fd.pipe(hash);
+
     return res.sendStatus(200)
   })
 }
