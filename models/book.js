@@ -9,7 +9,7 @@ const BookSchema = new Schema({
   sha1: { type: String, required: true, unique: true },
   filename: { type: String, required: true, unique: true },
   author: { type: String },
-  category: { type: String, required: true },
+  category: { type: String },//, required: true },
   synopsis: { type: String },
   publishDate: { type: Date },
   tags: { type: Array },

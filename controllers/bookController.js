@@ -46,6 +46,7 @@ function parsePDF(req, res) {
   });
 }
 
+
 function createBook(req, res) {
   let book = new Book();
 
@@ -68,8 +69,10 @@ function createBook(req, res) {
       return res
         .status(500)
         .send({ message: `Error al crear Book: ${err}` });
-
-    User.find(
+        
+    else 
+      res.status(200).send({book: BookStored})
+    /*User.find(
       { role: enumerated.role[2], role: enumerated.role[3] },
       (err, users) => {
         if (!err && users) {
@@ -86,7 +89,7 @@ function createBook(req, res) {
 
         res.status(200).send({ message: BookStored });
       }
-    );
+    );*/
   });
 }
 
@@ -238,17 +241,65 @@ function loadBook(req, res) {
     }
     var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
     var hash = crypto.createHash('sha1');
+    var myhash;
     hash.setEncoding('hex');
     
     fd.on('end', function() {
         hash.end();
-        console.log(hash.read()); // the desired sha1sum
-    });
-    
-    // read all file and pipe it (write it) to the hash object
-    fd.pipe(hash);
+        myhash =hash.read(); // the desired sha1sum
+        console.log("Extracted hash");
 
-    return res.sendStatus(200)
+        Book.find({ sha1: myhash })
+        .exec((err, books) => {
+          if (err)
+            return res
+              .status(500)
+              .send({ message: `Error al realizar la petición: ${err}` });
+          if (books.length == 0){
+            const pdfExtract = new PDFExtract();
+            const options = {}; /* see below */
+            let book = new Book();
+            
+
+            pdfExtract.extract('./temp_files/book.pdf', options, (err, data) => {
+                if (err){
+                  res.status(404).send({ message: err });
+                }
+                if(data.meta.info.Author != null) book.author = data.meta.info.Author;
+                if(data.meta.info.Title != null) book.title = data.meta.info.Title;
+                book.pageNumber = data.pages.length;
+                book.status = 'pending';
+                book.sha1 = myhash;
+                book.filename = req.file.originalname.toLowerCase();
+                console.log('hello');
+
+                book.save((err, BookStored) => {
+                  if (err){
+                    console.log("Tis but an error")
+                    return res
+                      .status(500)
+                      .send({ message: `Error al crear Book: ${err}` });
+                  }
+                      
+                  else{
+                    fsExtra.move('./temp_files/book.pdf', `./Libros/${req.file.originalname.toLowerCase()}`)
+                      .then(() => {
+                        console.log('success!')
+                        res.status(200).send({book: BookStored})
+                        })
+                      .catch(err => {
+                        return res.status(400).send({ message: err});
+                      })
+                  }
+                })
+            })
+          }
+          else
+            res.status(400).send({ message: `Already exists` });
+        });
+    });
+
+    fd.pipe(hash);
   })
 }
 
