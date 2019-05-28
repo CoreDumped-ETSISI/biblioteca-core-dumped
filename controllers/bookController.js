@@ -146,56 +146,35 @@ function searchAllFields(req, res){
 function getBookByTag(req, res) {
   let bookTag = req.params.tag;
 
-  Book.find({ tags : bookTag })
-    .exec((err, books) => {
-      if (err)
-        return res
-          .status(500)
-          .send({ message: `Error al realizar la petición: ${err}` });
-      if (!books)
-        return res
-          .status(404)
-          .send({ message: "No existen Books con ese tag" });
-
-      res.status(200).send({ books });
-    });
+  searchByField('tags', bookTag).then(
+    function(result) { 
+      res.status(200).send({ result });
+    },
+    function(error) { res.status(error.status).send(error.message) }
+  );
 }
 
 function getBookByTitle(req, res) {
   let bookTitle = req.params.title;
 
-  Book.find({ title: bookTitle })
-    .exec((err, books) => {
-      if (err)
-        return res
-          .status(500)
-          .send({ message: `Error al realizar la petición: ${err}` });
-      if (!books)
-        return res
-          .status(404)
-          .send({ message: "No existen Books con ese tag" });
-
-      res.status(200).send({ books });
-      });
+  searchByField('title', bookTitle).then(
+    function(result) { 
+      res.status(200).send({ result });
+    },
+    function(error) { res.status(error.status).send(error.message) }
+  );
 }
 
 
 function getBookByCategory(req, res) {
   let cat = req.params.category;
 
-  Book.find({ category: cat })
-    .exec((err, books) => {
-      if (err)
-        return res
-          .status(500)
-          .send({ message: `Error al realizar la petición: ${err}` });
-      if (!books)
-        return res
-          .status(404)
-          .send({ message: "No existen Books con esa categoría" });
-
-      res.status(200).send({ books });
-    });
+  searchByField('filename', cat).then(
+    function(result) { 
+      res.status(200).send({ result });
+    },
+    function(error) { res.status(error.status).send(error.message) }
+  );
 }
 
 function updateBook(req, res) {
@@ -233,6 +212,30 @@ function deleteBook(req, res) {
   });
 }
 
+var searchByField = function(field, fieldValue) {
+  return new Promise(function(resolve, reject) {
+    Book.find({ [field] : fieldValue })
+    .exec((err, books) => {
+      if (err)
+        reject({ status: 500, message: `Error al realizar la petición: ${err}` });
+      if (!books || books.length == 0)
+        reject({ status: 404, message: "El Book no existe" });
+      resolve(books);
+    });
+  });
+}
+
+function downloadBook(req,res){
+  var file = req.params.file;
+  searchByField('filename', file).then(
+    function(result) { 
+      var fileLocation = './Libros/'+result[0].sha1+'.pdf';
+      res.download(fileLocation, result[0].title+'-'+result[0].author+'.pdf'); 
+    },
+    function(error) { res.status(error.status).send(error.message) }
+  );
+}
+
 function loadBook(req, res) {
   fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
@@ -260,7 +263,6 @@ function loadBook(req, res) {
             const options = {}; /* see below */
             let book = new Book();
             
-
             pdfExtract.extract('./temp_files/book.pdf', options, (err, data) => {
                 if (err){
                   res.status(404).send({ message: err });
@@ -271,22 +273,20 @@ function loadBook(req, res) {
                 book.status = 'pending';
                 book.sha1 = myhash;
                 book.filename = req.file.originalname.toLowerCase();
-                console.log('hello');
 
                 book.save((err, BookStored) => {
                   if (err){
-                    console.log("Tis but an error")
                     return res
                       .status(500)
                       .send({ message: `Error al crear Book: ${err}` });
                   }
                       
                   else{
-                    fsExtra.move('./temp_files/book.pdf', `./Libros/${req.file.originalname.toLowerCase()}`)
+                    fsExtra.move('./temp_files/book.pdf', `./Libros/${myhash + '.pdf'}`)//${req.file.originalname.toLowerCase()}`)
                       .then(() => {
                         console.log('success!')
                         res.status(200).send({book: BookStored})
-                        })
+                      })
                       .catch(err => {
                         return res.status(400).send({ message: err});
                       })
@@ -315,5 +315,6 @@ module.exports = {
   searchAllFields,
   loadBook,
   parseEpub,
-  parsePDF
+  parsePDF,
+  downloadBook
 };

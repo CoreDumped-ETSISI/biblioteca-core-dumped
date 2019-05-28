@@ -12,6 +12,7 @@ router.get('/getBooks/:bookId', bookController.getAllBooks);
 router.get('/getEpubData', bookController.parseEpub);
 router.get('/getPDFData', bookController.parsePDF);
 router.get('/getAllBooks', bookController.getAllBooks);
+router.get('/download/:file(*)', bookController.downloadBook);
 router.get('/searchAllBooks/:search', bookController.searchAllFields);
 router.get('/getBooksByTitle/:title', bookController.getBookByTitle);
 router.get('/getBooksByCategory/:category', bookController.getBookByCategory);
