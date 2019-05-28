@@ -225,6 +225,51 @@ var searchByField = function(field, fieldValue) {
   });
 }
 
+var metadata = function(route) {
+  return new Promise(function(resolve, reject) {
+    const pdfExtract = new PDFExtract();
+    const options = {};
+    let book = new Book();
+    
+    pdfExtract.extract(route, options, (err, data) => {
+        if (err){
+          reject({ status: 404, message: err });
+        }
+        if(data.meta.info.Author != null) book.author = data.meta.info.Author;
+        if(data.meta.info.Title != null) book.title = data.meta.info.Title;
+        book.pageNumber = data.pages.length;
+        book.status = 'pending';
+        book.sha1 = myhash;
+        book.filename = req.file.originalname.toLowerCase();
+
+        resolve(book);
+    });
+  });
+}
+
+var saveBook = function(book){
+  return new Promise(function(resolve, reject) {
+    book.save((err, BookStored) => {
+      if (err){
+        reject({ status: 500, message: err });
+      }
+      resolve({ status: 200, message: BookStored });
+    });
+  });
+}
+
+var moveFile = function(origin, destination){
+  return new Promise(function(resolve, reject) {
+    fsExtra.move(origin, destination)
+      .then(() => {
+        resolve({ status: 200, message: BookStored });
+      })
+      .catch(err => {
+        reject({ status: 400, message: err });
+      })
+  });
+}
+
 function downloadBook(req,res){
   var file = req.params.file;
   searchByField('filename', file).then(
@@ -248,6 +293,55 @@ function loadBook(req, res) {
     hash.setEncoding('hex');
     
     fd.on('end', function() {
+      hash.end();
+      myhash =hash.read(); // the desired sha1sum
+      console.log("Extracted hash");
+
+      searchByField('sha1', myhash).then(
+        function() { 
+          metadata('./temp_files/book.pdf').then(
+            function(book){
+              saveBook(book).then(
+                function(){
+                  moveFile('./temp_files/book.pdf', `./Libros/${myhash + '.pdf'}`).then(
+                    function(end){
+                      res.status(end.status).send(end.message)
+                    },
+                    function(error){
+                      res.status(error.status).send(error.message) 
+                    }
+                  )
+                },
+                function(error){
+                  res.status(error.status).send(error.message) 
+                }
+              )
+            },
+            function(error){
+              res.status(error.status).send(error.message) 
+            }
+          )
+        },
+        function(error) { res.status(error.status).send(error.message) }
+      );
+    });
+
+    fd.pipe(hash);
+  })
+}
+
+/*function loadBook(req, res) {
+  fsExtra.emptyDirSync('./temp_files');
+  upload(req, res, function(err) {
+    if (err) {
+      return res.status(418).send({})
+    }
+    var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
+    var hash = crypto.createHash('sha1');
+    var myhash;
+    hash.setEncoding('hex');
+    
+    fd.on('end', function() {
         hash.end();
         myhash =hash.read(); // the desired sha1sum
         console.log("Extracted hash");
@@ -260,7 +354,7 @@ function loadBook(req, res) {
               .send({ message: `Error al realizar la petición: ${err}` });
           if (books.length == 0){
             const pdfExtract = new PDFExtract();
-            const options = {}; /* see below */
+            const options = {};
             let book = new Book();
             
             pdfExtract.extract('./temp_files/book.pdf', options, (err, data) => {
@@ -301,7 +395,7 @@ function loadBook(req, res) {
 
     fd.pipe(hash);
   })
-}
+}*/
 
 module.exports = {
   createBook,
