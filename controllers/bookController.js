@@ -9,6 +9,8 @@ const PDFExtract  = require('pdf.js-extract').PDFExtract;
 const fsExtra = require('fs-extra');
 const crypto = require('crypto');
 
+const path = require("path");
+
 var multer = require('multer')
 
 // Will later save in database with more complex name such as file.fieldname + '-' + Date.now()+' '+file.originalname
@@ -29,8 +31,10 @@ function parseEpub(req, res) {
   epubParser.parse('./temp_files/book.epub', '../Documents' , book => {
       if(book==undefined)
         res.status(404).send({ message:'You don´t have any epub files currently' });
-      else
+      else{
+        console.log(book);
         res.status(200).send({ message: book });
+      }
   });
 }
 
@@ -146,7 +150,7 @@ function searchAllFields(req, res){
 function getBookByTag(req, res) {
   let bookTag = req.params.tag;
 
-  searchByField('tags', bookTag).then(
+  searchByField('tags', bookTag, false).then(
     function(result) { 
       res.status(200).send({ result });
     },
@@ -157,7 +161,7 @@ function getBookByTag(req, res) {
 function getBookByTitle(req, res) {
   let bookTitle = req.params.title;
 
-  searchByField('title', bookTitle).then(
+  searchByField('title', bookTitle, false).then(
     function(result) { 
       res.status(200).send({ result });
     },
@@ -169,7 +173,7 @@ function getBookByTitle(req, res) {
 function getBookByCategory(req, res) {
   let cat = req.params.category;
 
-  searchByField('filename', cat).then(
+  searchByField('filename', cat, false).then(
     function(result) { 
       res.status(200).send({ result });
     },
@@ -202,48 +206,90 @@ function deleteBook(req, res) {
         .send({ message: `Error al borrar Book: ${err}` });
     if (!book)
       return res.status(404).send({ message: `El Book no existe` });
-    Book.remove(err => {
+    book.remove(err => {
       if (err)
         return res
           .status(500)
           .send({ message: `Error al borrar Book: ${err}` });
-      res.status(200).send({ message: "El Book ha sido borrado" });
+
+      var name = path.resolve(__dirname, '../Libros/'+book.sha1+'.'+book.filename.split('.')[1])
+
+      if (fsExtra.existsSync(name)) {
+        fsExtra.unlink(name, (err) => {
+          if (err) 
+            return res
+              .status(500)
+              .send({ message: `Error al borrar físicamente Book: ${err}` });
+          
+          res.status(200).send({ message: "El Book ha sido borrado" });
+        });
+      }
+      else{
+        return res
+          .status(500)
+          .send({ message: `Error al borrar asdfsadf Book: ${name}` });
+      }
     });
   });
 }
 
-var searchByField = function(field, fieldValue) {
+var searchByField = function(field, fieldValue, returnNotFound) {
   return new Promise(function(resolve, reject) {
     Book.find({ [field] : fieldValue })
     .exec((err, books) => {
       if (err)
         reject({ status: 500, message: `Error al realizar la petición: ${err}` });
-      if (!books || books.length == 0)
-        reject({ status: 404, message: "El Book no existe" });
+      if (!books || books.length == 0){
+        if(returnNotFound)
+          resolve();
+          reject({ status: 404, message: "El Book no existe" });
+      }
       resolve(books);
     });
   });
 }
 
-var metadata = function(route) {
+var metadata = function(route, myhash, filename) {
   return new Promise(function(resolve, reject) {
     const pdfExtract = new PDFExtract();
     const options = {};
     let book = new Book();
     
-    pdfExtract.extract(route, options, (err, data) => {
-        if (err){
-          reject({ status: 404, message: err });
-        }
-        if(data.meta.info.Author != null) book.author = data.meta.info.Author;
-        if(data.meta.info.Title != null) book.title = data.meta.info.Title;
-        book.pageNumber = data.pages.length;
-        book.status = 'pending';
-        book.sha1 = myhash;
-        book.filename = req.file.originalname.toLowerCase();
+    if(filename.includes(".pdf")) {
+      pdfExtract.extract(route, options, (err, data) => {
+          if (err){
+            reject({ status: 404, message: err });
+          }
+          if(data.meta.info.Author != null) book.author = data.meta.info.Author;
+          if(data.meta.info.Title != null) book.title = data.meta.info.Title;
+          book.pageNumber = data.pages.length;
+          book.status = 'pending';
+          book.sha1 = myhash;
+          book.filename = filename.toLowerCase();
 
-        resolve(book);
-    });
+          resolve(book);
+      });
+    }
+
+    else if(filename.includes(".epub")){
+      epubParser.parse(route, '../Documents' , bookMeta => {
+        if(bookMeta==undefined)
+          reject({ status: 404, message: 'Cannot extract epub metadata' });
+        else{
+          if(bookMeta.author != null) book.author = bookMeta.author;
+          if(bookMeta.title != null) book.title = bookMeta.title;
+          book.status = 'pending';
+          book.sha1 = myhash;
+          book.filename = filename.toLowerCase();
+
+          resolve(book);
+        }
+      });
+    }
+
+    else
+      reject({ status: 400, message: "File extension not suported" });
+    
   });
 }
 
@@ -251,7 +297,7 @@ var saveBook = function(book){
   return new Promise(function(resolve, reject) {
     book.save((err, BookStored) => {
       if (err){
-        reject({ status: 500, message: err });
+        reject({ status: 500, message: `Error saving book ${err}`});
       }
       resolve({ status: 200, message: BookStored });
     });
@@ -262,17 +308,17 @@ var moveFile = function(origin, destination){
   return new Promise(function(resolve, reject) {
     fsExtra.move(origin, destination)
       .then(() => {
-        resolve({ status: 200, message: BookStored });
+        resolve({ status: 200 });
       })
       .catch(err => {
-        reject({ status: 400, message: err });
+        reject({ status: 400, message: `Error moving file ${err}` });
       })
   });
 }
 
 function downloadBook(req,res){
   var file = req.params.file;
-  searchByField('filename', file).then(
+  searchByField('filename', file, false).then(
     function(result) { 
       var fileLocation = './Libros/'+result[0].sha1+'.pdf';
       res.download(fileLocation, result[0].title+'-'+result[0].author+'.pdf'); 
@@ -285,7 +331,7 @@ function loadBook(req, res) {
   fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
     if (err) {
-      return res.status(418).send({})
+      return res.status(418).send({error: err})
     }
     var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
     var hash = crypto.createHash('sha1');
@@ -297,15 +343,18 @@ function loadBook(req, res) {
       myhash =hash.read(); // the desired sha1sum
       console.log("Extracted hash");
 
-      searchByField('sha1', myhash).then(
+      var extension = req.file.originalname.includes(".pdf")? '.pdf' : '.epub'
+      var route = './temp_files/book'+extension
+
+      searchByField('sha1', myhash, true).then(
         function() { 
-          metadata('./temp_files/book.pdf').then(
+          metadata(route, myhash, req.file.originalname).then(
             function(book){
               saveBook(book).then(
-                function(){
-                  moveFile('./temp_files/book.pdf', `./Libros/${myhash + '.pdf'}`).then(
+                function(BookStored){
+                  moveFile(route, `./Libros/${myhash + extension}`).then(
                     function(end){
-                      res.status(end.status).send(end.message)
+                      res.status(end.status).send(BookStored)
                     },
                     function(error){
                       res.status(error.status).send(error.message) 
