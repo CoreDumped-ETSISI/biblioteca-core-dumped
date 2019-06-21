@@ -327,6 +327,25 @@ function downloadBook(req,res){
   );
 }
 
+function getMetadata(req, res) {
+  fsExtra.emptyDirSync('./temp_files');
+  upload(req, res, function(err) {
+    if (err) {
+      return res.status(418).send({error: err})
+    }
+    var extension = req.file.originalname.includes(".pdf")? '.pdf' : '.epub'
+    var route = './temp_files/book'+extension
+
+    metadata(route, 'x', req.file.originalname).then(
+      function(book){
+        res.status(200).send(book)
+      },
+      function(error){
+        res.status(error.status).send(error.message) 
+      })
+  })
+}
+
 function loadBook(req, res) {
   fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
@@ -379,72 +398,6 @@ function loadBook(req, res) {
   })
 }
 
-/*function loadBook(req, res) {
-  fsExtra.emptyDirSync('./temp_files');
-  upload(req, res, function(err) {
-    if (err) {
-      return res.status(418).send({})
-    }
-    var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
-    var hash = crypto.createHash('sha1');
-    var myhash;
-    hash.setEncoding('hex');
-    
-    fd.on('end', function() {
-        hash.end();
-        myhash =hash.read(); // the desired sha1sum
-        console.log("Extracted hash");
-
-        Book.find({ sha1: myhash })
-        .exec((err, books) => {
-          if (err)
-            return res
-              .status(500)
-              .send({ message: `Error al realizar la petición: ${err}` });
-          if (books.length == 0){
-            const pdfExtract = new PDFExtract();
-            const options = {};
-            let book = new Book();
-            
-            pdfExtract.extract('./temp_files/book.pdf', options, (err, data) => {
-                if (err){
-                  res.status(404).send({ message: err });
-                }
-                if(data.meta.info.Author != null) book.author = data.meta.info.Author;
-                if(data.meta.info.Title != null) book.title = data.meta.info.Title;
-                book.pageNumber = data.pages.length;
-                book.status = 'pending';
-                book.sha1 = myhash;
-                book.filename = req.file.originalname.toLowerCase();
-
-                book.save((err, BookStored) => {
-                  if (err){
-                    return res
-                      .status(500)
-                      .send({ message: `Error al crear Book: ${err}` });
-                  }
-                      
-                  else{
-                    fsExtra.move('./temp_files/book.pdf', `./Libros/${myhash + '.pdf'}`)//${req.file.originalname.toLowerCase()}`)
-                      .then(() => {
-                        console.log('success!')
-                        res.status(200).send({book: BookStored})
-                      })
-                      .catch(err => {
-                        return res.status(400).send({ message: err});
-                      })
-                  }
-                })
-            })
-          }
-          else
-            res.status(400).send({ message: `Already exists` });
-        });
-    });
-
-    fd.pipe(hash);
-  })
-}*/
 
 module.exports = {
   createBook,
@@ -459,5 +412,6 @@ module.exports = {
   loadBook,
   parseEpub,
   parsePDF,
-  downloadBook
+  downloadBook,
+  getMetadata
 };
