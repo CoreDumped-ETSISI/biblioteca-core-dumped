@@ -346,6 +346,68 @@ function getMetadata(req, res) {
   })
 }
 
+function newLoadBook(req, res){
+  let book = new Book();
+
+  book.status = 'pending';
+
+  fsExtra.emptyDirSync('./temp_files');
+  upload(req, res, function(err) {
+    if (err) {
+      return res.status(418).send({error: err})
+    }
+    let data = JSON.parse(req.body.data)
+    
+    book.title = data.title;
+    book.author = data.author;
+    book.category = data.category;
+    book.synopsis = data.synopsis;
+    book.publishDate = data.publishDate;
+    book.publisher = data.publisher;
+    book.pageNumber = data.pageNumber;
+
+    var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
+    var hash = crypto.createHash('sha1');
+    var myhash;
+    hash.setEncoding('hex');
+    
+    fd.on('end', function() {
+      hash.end();
+      myhash =hash.read(); // the desired sha1sum
+      console.log("Extracted hash");
+
+      var extension = req.file.originalname.includes(".pdf")? '.pdf' : '.epub'
+      var route = './temp_files/book'+extension
+
+      searchByField('sha1', myhash, true).then(
+        function() { 
+          book.sha1 = myhash
+          book.filename = req.file.originalname
+          console.log("Im here "+book)
+          saveBook(book).then(
+            function(BookStored){
+              moveFile(route, `./Libros/${myhash + extension}`).then(
+              function(end){
+                res.status(end.status).send(BookStored)
+              },
+              function(error){
+                res.status(error.status).send(error.message) 
+              })
+            },
+            function(error){
+              res.status(error.status).send(error.message) 
+            }
+          )
+        },
+        function(error){
+          res.status(error.status).send(error.message) 
+        }
+      );
+    });
+    fd.pipe(hash);
+  })
+}
+
 function loadBook(req, res) {
   fsExtra.emptyDirSync('./temp_files');
   upload(req, res, function(err) {
@@ -413,5 +475,6 @@ module.exports = {
   parseEpub,
   parsePDF,
   downloadBook,
-  getMetadata
+  getMetadata,
+  newLoadBook
 };

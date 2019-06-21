@@ -9,6 +9,7 @@ const bookController = require('../controllers/bookController')
 router.post('/createBook', bookController.createBook);
 router.post('/getMetadata', bookController.getMetadata);
 router.post('/uploadBook', bookController.loadBook);
+router.post('/newUploadBook', bookController.newLoadBook);
 router.get('/getBooks/:bookId', bookController.getAllBooks);
 router.get('/getEpubData', bookController.parseEpub);
 router.get('/getPDFData', bookController.parsePDF);
