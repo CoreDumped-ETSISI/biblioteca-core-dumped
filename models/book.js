@@ -20,7 +20,7 @@ const BookSchema = new Schema({
   status: {type: String, enum: enumerator.bookStatus, required: true},
   uploader: { type: Schema.Types.ObjectId, ref: enumerator.modelsName.user },
   format: { type: String, enum: enumerator.formats },
-  size: { type: Number }
+  size: { type: Number } // Unit: bytes
 });
 
 module.exports = mongoose.model(

@@ -318,12 +318,15 @@ var moveFile = function(origin, destination){
 
 function downloadBook(req,res){
   var file = req.params.file;
+  var extension = file.split('.')[1]
   searchByField('filename', file, false).then(
     function(result) { 
-      var fileLocation = './Libros/'+result[0].sha1+'.pdf';
-      res.download(fileLocation, result[0].title+'-'+result[0].author+'.pdf'); 
+      var fileLocation = './Libros/'+result[0].sha1+'.'+extension;
+      res.download(fileLocation, result[0].title+'-'+result[0].author+'.'+extension); 
     },
-    function(error) { res.status(error.status).send(error.message) }
+    function(error) { 
+      console.log("My bad"); 
+      res.status(error.status).send(error.message) }
   );
 }
 
@@ -365,6 +368,7 @@ function newLoadBook(req, res){
     book.publishDate = data.publishDate;
     book.publisher = data.publisher;
     book.pageNumber = data.pageNumber;
+    book.size = data.size;
 
     var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
     var hash = crypto.createHash('sha1');
@@ -377,13 +381,13 @@ function newLoadBook(req, res){
       console.log("Extracted hash");
 
       var extension = req.file.originalname.includes(".pdf")? '.pdf' : '.epub'
+      book.format = extension.replace('.','')
       var route = './temp_files/book'+extension
 
       searchByField('sha1', myhash, true).then(
         function() { 
           book.sha1 = myhash
           book.filename = req.file.originalname
-          console.log("Im here "+book)
           saveBook(book).then(
             function(BookStored){
               moveFile(route, `./Libros/${myhash + extension}`).then(
