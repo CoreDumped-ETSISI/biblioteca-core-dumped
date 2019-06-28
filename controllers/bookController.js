@@ -51,6 +51,7 @@ function parsePDF(req, res) {
 }
 
 
+
 function createBook(req, res) {
   let book = new Book();
 
@@ -260,8 +261,11 @@ var metadata = function(route, myhash, filename) {
           if (err){
             reject({ status: 404, message: err });
           }
+          console.log(data)
           if(data.meta.info.Author != null) book.author = data.meta.info.Author;
           if(data.meta.info.Title != null) book.title = data.meta.info.Title;
+          if(data.meta.info.CreationDate != null) 
+            book.publishDate = parseInt(data.meta.info.CreationDate.match(/\d\d\d\d/),10)
           book.pageNumber = data.pages.length;
           book.status = 'pending';
           book.sha1 = myhash;
@@ -276,8 +280,36 @@ var metadata = function(route, myhash, filename) {
         if(bookMeta==undefined)
           reject({ status: 404, message: 'Cannot extract epub metadata' });
         else{
+          console.log(bookMeta)
           if(bookMeta.author != null) book.author = bookMeta.author;
-          if(bookMeta.title != null) book.title = bookMeta.title;
+          if(bookMeta.title != null){
+            if(bookMeta.title._ != null)
+              book.title = bookMeta.title._
+            else
+              book.title = bookMeta.title;
+          }
+          if(bookMeta.description != null){
+            if(bookMeta.description._ != null)
+              book.synopsis = bookMeta.description._.replace(/<\s*.[^>]*>/g, "")
+            else
+              book.synopsis = bookMeta.description.replace(/<\s*.[^>]*>/g, "");
+          }
+          if(bookMeta.publisher != null){
+            if(bookMeta.publisher._ != null)
+              book.publisher = bookMeta.publisher._
+            else
+              book.publisher = bookMeta.publisher;
+          }
+          if(bookMeta.pubdate){
+            book.publishDate = parseInt(bookMeta.pubdate.match(/[0-9]+/)[0],10)
+            console.log(book.publishDate)
+          }
+          if(bookMeta.subject != null){
+            if(bookMeta.subject[0] != null)
+              book.category = bookMeta.subject[0]._
+            else
+              book.category = bookMeta.subject[0];
+          }
           book.status = 'pending';
           book.sha1 = myhash;
           book.filename = filename.toLowerCase();

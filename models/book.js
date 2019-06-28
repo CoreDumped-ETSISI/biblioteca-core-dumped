@@ -11,7 +11,7 @@ const BookSchema = new Schema({
   author: { type: String },
   category: { type: String },//, required: true },
   synopsis: { type: String },
-  publishDate: { type: Date },
+  publishDate: { type: Number },
   tags: { type: Array },
   language: { type: String },
   publisher: { type: String },
