@@ -20,6 +20,8 @@ app.use(function(req, res, next) {
   next();
 });
 
+app.use(express.static('Covers'))
+
 app.use('/user', userRoutes);
 app.use('/book', bookRoutes);
 

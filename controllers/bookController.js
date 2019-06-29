@@ -8,7 +8,6 @@ const epubParser = require('epub-metadata-parser');
 const PDFExtract  = require('pdf.js-extract').PDFExtract;
 const fsExtra = require('fs-extra');
 const crypto = require('crypto');
-
 const path = require("path");
 
 var multer = require('multer')
@@ -25,6 +24,7 @@ var storage = multer.diskStorage({
   }
 })
 var upload = multer({ storage: storage, preservePath: true }).single('book');
+var upload2 = multer({ storage: storage, preservePath: true }).single('image');
 
 
 function parseEpub(req, res) {
@@ -49,7 +49,6 @@ function parsePDF(req, res) {
       res.status(200).send({ message: data });
   });
 }
-
 
 
 function createBook(req, res) {
@@ -381,7 +380,7 @@ function getMetadata(req, res) {
   })
 }
 
-function newLoadBook(req, res){
+function loadBook(req, res){
   let book = new Book();
 
   book.status = 'pending';
@@ -401,6 +400,12 @@ function newLoadBook(req, res){
     book.publisher = data.publisher;
     book.pageNumber = data.pageNumber;
     book.size = data.size;
+    book.imageFormat = data.imageFormat;
+
+    var acceptedFormats = ['png', 'jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi']
+
+    if(!acceptedFormats.includes(book.imageFormat.toLowerCase()))
+      res.status(400).send('Wrong image format')
 
     var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
     var hash = crypto.createHash('sha1');
@@ -444,55 +449,26 @@ function newLoadBook(req, res){
   })
 }
 
-function loadBook(req, res) {
+
+function loadImage(req, res) {
   fsExtra.emptyDirSync('./temp_files');
-  upload(req, res, function(err) {
+  upload2(req, res, function(err) {
     if (err) {
       return res.status(418).send({error: err})
     }
-    var fd = fsExtra.createReadStream('./temp_files/'+req.file.filename);
-    var hash = crypto.createHash('sha1');
-    var myhash;
-    hash.setEncoding('hex');
-    
-    fd.on('end', function() {
-      hash.end();
-      myhash =hash.read(); // the desired sha1sum
-      console.log("Extracted hash");
+    let data = JSON.parse(req.body.data)
+    let sha1 = data.sha1;
 
-      var extension = req.file.originalname.includes(".pdf")? '.pdf' : '.epub'
-      var route = './temp_files/book'+extension
+    var route = req.file.destination+'/'+req.file.filename
+    var extension = '.'+req.file.filename.split('.')[1]
 
-      searchByField('sha1', myhash, true).then(
-        function() { 
-          metadata(route, myhash, req.file.originalname).then(
-            function(book){
-              saveBook(book).then(
-                function(BookStored){
-                  moveFile(route, `./Libros/${myhash + extension}`).then(
-                    function(end){
-                      res.status(end.status).send(BookStored)
-                    },
-                    function(error){
-                      res.status(error.status).send(error.message) 
-                    }
-                  )
-                },
-                function(error){
-                  res.status(error.status).send(error.message) 
-                }
-              )
-            },
-            function(error){
-              res.status(error.status).send(error.message) 
-            }
-          )
-        },
-        function(error) { res.status(error.status).send(error.message) }
-      );
-    });
-
-    fd.pipe(hash);
+    moveFile(route, `./Covers/${sha1 + extension}`).then(
+      function(end){
+        res.status(end.status).send({message: 'Everything went ok'})
+      },
+      function(error){
+        res.status(error.status).send(error.message) 
+    })
   })
 }
 
@@ -512,5 +488,5 @@ module.exports = {
   parsePDF,
   downloadBook,
   getMetadata,
-  newLoadBook
+  loadImage
 };
