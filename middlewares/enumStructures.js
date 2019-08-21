@@ -1,31 +1,30 @@
-'use strict'
-
 const role = [
-    'admin',
-    'baseUser',
-    'collaborator'
+  'admin',
+  'baseUser',
+  'collaborator',
 ];
 
 const formats = [
-    'pdf',
-    'epub'
+  'pdf',
+  'epub',
 ];
 
 const modelsName = {
-    book: 'Book',
-    user: 'User',
-    donation: 'Donation'
+  book: 'Book',
+  user: 'User',
+  donation: 'Donation',
 };
 
 const bookStatus = [
-    'pending',
-    'denied',
-    'accepted',
-    'erased'    
+  'pending',
+  'denied',
+  'accepted',
+  'erased',
 ];
 
 module.exports = {
-    role,
-    modelsName,
-    bookStatus
-}
+  role,
+  formats,
+  modelsName,
+  bookStatus,
+};

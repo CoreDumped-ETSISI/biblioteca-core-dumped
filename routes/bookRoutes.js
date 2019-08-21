@@ -1,10 +1,8 @@
-'use strict'
+const express = require('express');
+const auth = require('../middlewares/auth');
+const bookController = require('../controllers/bookController');
 
-const express = require('express')
-const router = express.Router()
-const auth = require('../middlewares/auth')
-
-const bookController = require('../controllers/bookController')
+const router = express.Router();
 
 router.post('/createBook', bookController.createBook);
 router.post('/getMetadata', bookController.getMetadata);
@@ -23,7 +21,7 @@ router.put('/:bookId', bookController.updateBook);
 router.delete('/:bookId', bookController.deleteBook);
 
 router.get('/private', auth, (req, res) => {
-	res.status(200).send({ message: 'Tienes acceso'})
-})
+  res.status(200).send({ message: 'Tienes acceso' });
+});
 
-module.exports = router
+module.exports = router;
