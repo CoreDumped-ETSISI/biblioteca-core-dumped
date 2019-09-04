@@ -59,3 +59,9 @@ typings/
 
 # next.js build output
 .next
+
+#folders
+Covers/
+Libros/
+temp_files/
+book/
