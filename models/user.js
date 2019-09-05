@@ -47,6 +47,4 @@ UserSchema.methods.comparePassword = function (candidatePassword, cb) {
   })
 }
 
-module.exports = mongoose.model(
-  UserSchema
-)
+module.exports = mongoose.model('User', UserSchema)

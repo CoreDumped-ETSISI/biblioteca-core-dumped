@@ -18,13 +18,10 @@ const BookSchema = new Schema({
   pageNumber: { type: Number },
   index: { type: String },
   status: { type: String, enum: enumerator.bookStatus, required: true },
-  uploader: { type: Schema.Types.ObjectId, ref: enumerator.modelsName.user },
+  uploader: { type: Schema.Types.ObjectId, ref: 'User' },
   format: { type: String, enum: enumerator.formats },
   imageFormat: { type: String },
   size: { type: Number } // Unit: bytes
 })
 
-module.exports = mongoose.model(
-  enumerator.modelsName.book,
-  BookSchema
-)
+module.exports = mongoose.model('Book', BookSchema)
