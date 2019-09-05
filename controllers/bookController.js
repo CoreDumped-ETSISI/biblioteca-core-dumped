@@ -52,7 +52,8 @@ function createBook (req, res) {
 
   book.title = req.body.title
   book.author = req.body.author
-  book.category = req.body.category
+  book.filename = req.body.filename
+  book.sha1 = req.body.sha1
   book.synopsis = req.body.description
   book.publishDate = req.body.publishDate
   book.tags = req.body.tags
@@ -61,7 +62,6 @@ function createBook (req, res) {
   book.pageNumber = req.body.pageNumber
   book.index = req.body.index
   book.uploader = req.body.uploader
-  book.status = 'pending'
 
   console.log(`New book: \n ${book}`)
   book.save((err, bookStored) => {
@@ -94,16 +94,17 @@ function createBook (req, res) {
 }
 
 function getAllBooks (req, res) {
-  Book.find({}, (err, books) => {
-    if (err) {
-      return res
-        .status(500)
-        .send({ message: `Error al realizar la petición: ${err}` })
-    }
-    if (!books) return res.status(404).send({ message: 'No existen libros' })
+  Book.find()
+    .exec((err, books) => {
+      if (err) {
+        return res
+          .status(500)
+          .send({ message: `Error al realizar la petición: ${err}` })
+      }
+      if (!books) return res.status(404).send({ message: 'No existen libros' })
 
-    return res.status(200).send({ books })
-  })
+      return res.status(200).send({ books })
+    })
 }
 
 function getBook (req, res) {
@@ -127,7 +128,7 @@ function searchAllFields (req, res) {
   const { search } = req.params
 
   Book.find({
-    $or: [{ title: search }, { author: search }, { category: search },
+    $or: [{ title: search }, { author: search }, { tags: search },
       { synopsis: search }, { tags: search }, { publisher: search }, { index: search }]
   },
   (err, books) => {
@@ -136,10 +137,10 @@ function searchAllFields (req, res) {
         .status(500)
         .send({ message: `Error al realizar la petición: ${err}` })
     }
-    if (!books) {
+    if (books.length === 0) {
       return res
         .status(404)
-        .send({ message: 'No existen libros con ese tag' })
+        .send({ message: 'No existen libros con ese campo' })
     }
 
     return res.status(200).send({ books })
@@ -184,18 +185,6 @@ function getBookByTitle (req, res) {
     })
 }
 
-function getBookByCategory (req, res) {
-  const { category } = req.params
-
-  searchByField('filename', category, false)
-    .then((result) => {
-      return res.status(200).send({ result })
-    })
-    .catch((error) => {
-      return res.status(error.status).send(error.message)
-    })
-}
-
 function updateBook (req, res) {
   const updated = req.body
   const { bookId } = req.params
@@ -212,7 +201,7 @@ function updateBook (req, res) {
 
 function deleteBook (req, res) {
   const { bookId } = req.params
-
+  console.log(bookId)
   Book.findByIdAndDelete(bookId, (err, book) => {
     if (err || book === null) {
       return res
@@ -264,7 +253,6 @@ var metadata = function (route, myhash, filename) {
         if (data.meta.info.Title != null) book.title = data.meta.info.Title
         if (data.meta.info.CreationDate != null) { book.publishDate = parseInt(data.meta.info.CreationDate.match(/\d\d\d\d/), 10) }
         book.pageNumber = data.pages.length
-        book.status = 'pending'
         book.sha1 = myhash
         book.filename = filename.toLowerCase()
 
@@ -291,12 +279,11 @@ var metadata = function (route, myhash, filename) {
           }
           if (bookMeta.subject != null) {
             if (bookMeta.subject[0] != null) {
-              book.category = bookMeta.subject[0]._
+              book.tags[0] = bookMeta.subject[0]._
             } else {
-              book.category = bookMeta.subject[0]
+              book.tags[0] = bookMeta.subject[0]
             }
           }
-          book.status = 'pending'
           book.sha1 = myhash
           book.filename = filename.toLowerCase()
 
@@ -368,22 +355,16 @@ function getMetadata (req, res) {
 function loadBook (req, res) {
   const book = new Book()
 
-  book.status = 'pending'
-
   fsExtra.emptyDirSync('./temp_files')
-  console.log('Hello ' + 1)
   upload(req, res, function (err) {
-    console.log('Hello ' + 2)
     if (err) {
-      console.log('Hello ' + 3)
       return res.status(500).send({ error: err })
     }
-    console.log('Hello ' + 4)
     const data = JSON.parse(req.body.data)
 
     book.title = data.title
     book.author = data.author
-    book.category = data.category
+    book.tags = data.tags
     book.synopsis = data.synopsis
     book.publishDate = data.publishDate
     book.publisher = data.publisher
@@ -469,7 +450,6 @@ module.exports = {
   getAllBooks,
   getBookByTag,
   getBookByTitle,
-  getBookByCategory,
   searchAllFields,
   loadBook,
   parseEpub,
