@@ -213,30 +213,39 @@ function updateBook (req, res) {
 
 function deleteBook (req, res) {
   const { bookId } = req.params
-
-  Book.findByIdAndRemove(bookId, (err, book) => {
-    if (err) {
+  console.log(bookId)
+  Book.findByIdAndDelete(bookId, (err, book) => {
+    if (err || book === null) {
       return res
         .status(500)
         .send({ message: `Error al borrar el libro: ${err}` })
     }
 
-    var name = path.resolve(__dirname, '../Libros/' + book.sha1 + '.' + book.format)
+    var bookPath = path.resolve(__dirname, '../Libros/' + book.sha1 + '.' + book.format)
+    var imagePath = path.resolve(__dirname, '../Covers/' + book.sha1 + '.' + book.imageFormat)
 
-    if (fsExtra.existsSync(name)) {
-      fsExtra.unlink(name, (err) => {
+    if (fsExtra.existsSync(bookPath)) {
+      fsExtra.unlink(bookPath, (err) => {
         if (err) {
           return res
             .status(500)
             .send({ message: `Error al borrar físicamente el libro: ${err}` })
         }
-
-        return res.status(200).send({ message: 'El libro ha sido borrado' })
       })
+      if (fsExtra.existsSync(imagePath)) {
+        fsExtra.unlink(imagePath, (err) => {
+          if (err) {
+            return res
+              .status(500)
+              .send({ message: `Error al borrar físicamente la imagen del libro: ${err}` })
+          }
+          return res.status(200).send({ message: 'La imagen del libro ha sido borrado' })
+        })
+      }
     } else {
       return res
         .status(500)
-        .send({ message: `Error al borrar asdfsadf el libro: ${name}` })
+        .send({ message: `Error al borrar el libro: ${bookPath}` })
     }
   })
 }
@@ -363,10 +372,14 @@ function loadBook (req, res) {
   book.status = 'pending'
 
   fsExtra.emptyDirSync('./temp_files')
+  console.log('Hello ' + 1)
   upload(req, res, function (err) {
+    console.log('Hello ' + 2)
     if (err) {
+      console.log('Hello ' + 3)
       return res.status(500).send({ error: err })
     }
+    console.log('Hello ' + 4)
     const data = JSON.parse(req.body.data)
 
     book.title = data.title
