@@ -15,8 +15,6 @@ const BookSchema = new Schema({
   tags: { type: Array },
   language: { type: String },
   publisher: { type: String },
-  pageNumber: { type: Number },
-  index: { type: String },
   status: { type: String, enum: enumerator.bookStatus, required: true },
   uploader: { type: Schema.Types.ObjectId, ref: 'User' },
   format: { type: String, enum: enumerator.formats },
