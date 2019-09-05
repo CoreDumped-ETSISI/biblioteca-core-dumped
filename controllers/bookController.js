@@ -94,17 +94,16 @@ function createBook (req, res) {
 }
 
 function getAllBooks (req, res) {
-  Book.find()
-    .exec((err, books) => {
-      if (err) {
-        return res
-          .status(500)
-          .send({ message: `Error al realizar la petición: ${err}` })
-      }
-      if (!books) return res.status(404).send({ message: 'No existen libros' })
+  Book.find({}, (err, books) => {
+    if (err) {
+      return res
+        .status(500)
+        .send({ message: `Error al realizar la petición: ${err}` })
+    }
+    if (!books) return res.status(404).send({ message: 'No existen libros' })
 
-      return res.status(200).send({ books })
-    })
+    return res.status(200).send({ books })
+  })
 }
 
 function getBook (req, res) {
@@ -213,7 +212,7 @@ function updateBook (req, res) {
 
 function deleteBook (req, res) {
   const { bookId } = req.params
-  console.log(bookId)
+
   Book.findByIdAndDelete(bookId, (err, book) => {
     if (err || book === null) {
       return res

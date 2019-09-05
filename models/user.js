@@ -24,22 +24,8 @@ const UserSchema = new Schema({
     maxlength: 50
   },
   creation: { type: Date, default: Date.now() },
-  donations: {
-    money: [
-      {
-        _id: false,
-        type: Schema.Types.ObjectId,
-        ref: enumerator.modelsName.donation
-      }
-    ],
-    books: [
-      {
-        _id: false,
-        type: Schema.Types.ObjectId,
-        ref: enumerator.modelsName.book
-      }
-    ]
-  }
+  donations: { type: Number, default: 0 },
+  status: { type: String, default: enumerator.userStatus[1] }
 })
 
 UserSchema.pre('save', function (next) {
@@ -62,6 +48,5 @@ UserSchema.methods.comparePassword = function (candidatePassword, cb) {
 }
 
 module.exports = mongoose.model(
-  enumerator.modelsName.user,
   UserSchema
 )
