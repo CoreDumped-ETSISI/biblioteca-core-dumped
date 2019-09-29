@@ -25,7 +25,7 @@ const UserSchema = new Schema({
   },
   creation: { type: Date, default: Date.now() },
   donations: { type: Number, default: 0 },
-  status: { type: String, default: enumerator.userStatus[1] }
+  status: { type: String, default: enumerator.userStatus[0] }
 })
 
 UserSchema.pre('save', function (next) {

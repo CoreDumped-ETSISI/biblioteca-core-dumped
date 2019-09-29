@@ -368,7 +368,6 @@ function loadBook (req, res) {
     book.synopsis = data.synopsis
     book.publishDate = data.publishDate
     book.publisher = data.publisher
-    book.pageNumber = data.pageNumber
     book.size = data.size
     book.imageFormat = data.imageFormat
 
