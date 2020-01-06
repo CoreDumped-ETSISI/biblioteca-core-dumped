@@ -33,7 +33,7 @@ function createUser (req, res) {
     return res.status(400).send({ message: 'missing params' })
   }
 
-  const user = new User({ userName, firstName, lastName, password })
+  const user = new User({ userName, firstName, lastName, password})
   user.save((err, userStored) => {
     if (err) return res.status(500).send({ message: `Error al salvar la base de datos ${err}` })
     return res.status(200).send({ token: service.createToken(user) })

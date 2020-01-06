@@ -14,8 +14,9 @@ const BookSchema = new Schema({
   tags: { type: [String] },
   language: { type: String },
   publisher: { type: String },
-  status: { type: String, enum: enumerator.bookStatus, required: true, default: 'pending' },
+  status: { type: String, enum: enumerator.bookStatus, required: true, default: 'accepted' },
   uploader: { type: Schema.Types.ObjectId, ref: 'User' },
+  uploadDate: { type: Date, default: function(){return Date.now()} },
   format: { type: String, enum: enumerator.formats },
   imageFormat: { type: String },
   size: { type: Number } // Unit: bytes

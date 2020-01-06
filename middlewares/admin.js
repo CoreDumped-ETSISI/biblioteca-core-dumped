@@ -2,7 +2,7 @@
 
 const services = require('../services')
 
-function isAuth (req, res, next) {
+function isAdmin (req, res, next) {
 	if(!req.headers.authorization) {
 		return res.status(403).send({message: 'No tienes autorización'})
 	}
@@ -10,7 +10,10 @@ function isAuth (req, res, next) {
 	const token = req.headers.authorization.split(" ")[1]
 	services.decodeToken(token)
 		.then(response => {
-			req.user = response.sub
+			console.log(response)
+            req.user = response.sub
+            if(response.role !== "admin")
+                return res.status(403).send({message: 'No tienes autorización'})
 			next()
 		})
 		.catch(response => {
@@ -18,4 +21,4 @@ function isAuth (req, res, next) {
 		})
 }
 
-module.exports = isAuth
+module.exports = isAdmin

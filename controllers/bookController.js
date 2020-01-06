@@ -107,6 +107,20 @@ function getAllBooks (req, res) {
     })
 }
 
+function getPaginatedBooks (req, res) {
+  Book.find()
+    .exec((err, books) => {
+      if (err) {
+        return res
+          .status(500)
+          .send({ message: `Error al realizar la petición: ${err}` })
+      }
+      if (!books) return res.status(404).send({ message: 'No existen libros' })
+
+      return res.status(200).send({ books })
+    })
+}
+
 function getBook (req, res) {
   const { bookId } = req.params
 
@@ -370,6 +384,8 @@ function loadBook (req, res) {
     book.publisher = data.publisher
     book.size = data.size
     book.imageFormat = data.imageFormat
+    book.language = data.language
+
 
     var acceptedFormats = ['png', 'jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi']
 
