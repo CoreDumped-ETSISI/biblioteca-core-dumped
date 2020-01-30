@@ -387,7 +387,7 @@ function loadBook (req, res) {
     book.language = data.language
 
 
-    var acceptedFormats = ['png', 'jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi']
+    var acceptedFormats = ['png', 'jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi', '']
 
     if (!acceptedFormats.includes(book.imageFormat.toLowerCase())) {
       res.status(400).send('Wrong image format')
