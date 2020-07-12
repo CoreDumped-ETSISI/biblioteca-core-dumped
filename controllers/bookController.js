@@ -121,11 +121,13 @@ function getPaginatedBooks (req, res) {
     })
 }
 
-function getBook (req, res) {
+function getBook(req, res) {
+  console.log("llego")
+  console.log(req.params)
   const { bookId } = req.params
+  console.log(bookId)
 
   Book.findById(bookId)
-    .populate('author')
     .exec((err, book) => {
       if (err) {
         return res

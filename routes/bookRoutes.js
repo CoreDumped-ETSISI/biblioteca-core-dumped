@@ -10,7 +10,7 @@ router.post('/createBook', bookController.createBook)
 router.post('/getMetadata', bookController.getMetadata)
 router.post('/uploadBook', bookController.loadBook)
 router.post('/uploadImage', bookController.loadImage)
-router.get('/getBooks/:bookId', bookController.getAllBooks)
+router.get('/getBook/:bookId', bookController.getBook)
 router.get('/getEpubData', bookController.parseEpub)
 router.get('/getPDFData', bookController.parsePDF)
 router.get('/getAllBooks', bookController.getAllBooks) //auth
